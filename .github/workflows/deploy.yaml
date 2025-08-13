@@ -2,37 +2,37 @@ name: Deploy to Cloud Run
 
 on:
   push:
-    branches: [ "main" ]
-
-env:
-  SERVICE_NAME: my-python-flask-service
-  REGION: ${{ secrets.REGION }}
-  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+    branches:
+      - main
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v3
 
-      - name: Set up gcloud
-        uses: google-github-actions/setup-gcloud@v1
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
         with:
-          project_id: ${{ secrets.GCP_PROJECT_ID }}
-          service_account_key: ${{ secrets.GCP_SA_KEY }}
-          export_default_credentials: true
+          credentials_json: '${{ secrets.GCP_SA_KEY }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: YOUR_PROJECT_ID
 
       - name: Build and push Docker image
         run: |
-          gcloud auth configure-docker ${REGION}-docker.pkg.dev
-          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-actions-repo/my-image:latest .
-          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-actions-repo/my-image:latest
+          gcloud auth configure-docker us-central1-docker.pkg.dev
+          docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/cloud-run-actions-repo/custom-python-flask:latest .
+          docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/cloud-run-actions-repo/custom-python-flask:latest
 
       - name: Deploy to Cloud Run
         run: |
-          gcloud run deploy $SERVICE_NAME \
-            --image ${REGION}-docker.pkg.dev/${PROJECT_ID}/cloud-run-actions-repo/my-image:latest \
-            --region $REGION \
+          gcloud run deploy my-web-app \
+            --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/cloud-run-actions-repo/custom-python-flask:latest \
             --platform managed \
+            --region us-central1 \
             --allow-unauthenticated
